@@ -28,7 +28,7 @@ let AppController = class AppController {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async createLink(body) {
+    async createLink(body, req) {
         const destination = body.destination ? body.destination.trim() : '';
         if (!destination) {
             throw new common_1.BadRequestException('Đường dẫn gốc là bắt buộc');
@@ -52,8 +52,12 @@ let AppController = class AppController {
             if (slug.length > 30) {
                 throw new common_1.BadRequestException('Slug không được vượt quá 30 ký tự');
             }
+            const reservedSlugs = ['api', 'admin', 'login', 'dashboard'];
+            if (reservedSlugs.includes(slug.toLowerCase())) {
+                throw new common_1.BadRequestException('Slug này không được phép sử dụng');
+            }
             const existing = await this.prisma.link.findUnique({
-                where: { slug }
+                where: { slug },
             });
             if (existing) {
                 throw new common_1.BadRequestException('Slug này đã tồn tại, vui lòng chọn slug khác');
@@ -65,7 +69,7 @@ let AppController = class AppController {
             while (!isUnique && attempts < 10) {
                 slug = generateRandomSlug(6);
                 const existing = await this.prisma.link.findUnique({
-                    where: { slug }
+                    where: { slug },
                 });
                 if (!existing) {
                     isUnique = true;
@@ -79,14 +83,24 @@ let AppController = class AppController {
         const link = await this.prisma.link.create({
             data: {
                 slug,
-                destination: url
-            }
+                destination: url,
+            },
         });
-        return link;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+        const host = req.headers.host;
+        return {
+            id: link.id,
+            slug: link.slug,
+            destination: link.destination,
+            shortUrl: `${protocol}://${host}/${link.slug}`,
+            createdAt: link.createdAt,
+        };
     }
-    async redirectLink(slug, res) {
+    async redirectLink(slug, req, res) {
+        console.log('Host:', req.hostname);
+        console.log('Slug:', slug);
         const link = await this.prisma.link.findUnique({
-            where: { slug }
+            where: { slug },
         });
         if (!link) {
             throw new common_1.NotFoundException('Link không tồn tại');
@@ -98,16 +112,18 @@ exports.AppController = AppController;
 __decorate([
     (0, common_1.Post)('api/links'),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AppController.prototype, "createLink", null);
 __decorate([
     (0, common_1.Get)(':slug'),
     __param(0, (0, common_1.Param)('slug')),
-    __param(1, (0, common_1.Res)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AppController.prototype, "redirectLink", null);
 exports.AppController = AppController = __decorate([
