@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiếng Trung Huamei - Rút Gọn Link</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Huamei Link</h1>
+            <p>Rút gọn link nhanh chóng và dễ dàng</p>
+        </header>
+
+        <main class="glass-panel">
+            <form id="link-form">
+                <div class="input-group">
+                    <label for="slug">Đường dẫn rút gọn (Slug)</label>
+                    <div class="input-wrapper">
+                        <span class="prefix">tiengtrunghuamei.com.vn/</span>
+                        <input type="text" id="slug" name="slug" placeholder="vd: a1 (để trống tự tạo)" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="destination">Đường dẫn gốc (Destination URL)</label>
+                    <input type="url" id="destination" name="destination" placeholder="https://facebook.com/..." required autocomplete="off">
+                </div>
+
+                <button type="submit" id="submit-btn">
+                    <span>Tạo Link</span>
+                    <div class="loader" id="loader" style="display: none;"></div>
+                </button>
+            </form>
+
+            <div id="result-message" class="message" style="display: none;"></div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
