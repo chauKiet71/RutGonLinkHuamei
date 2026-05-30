@@ -20,5 +20,5 @@ export declare class AppController {
         createdAt: Date;
         clicks: number;
     }[]>;
-    redirectLink(req: Request, res: Response, next: NextFunction): Promise<void>;
+    redirectLink(req: Request, res: Response, next: NextFunction): Promise<void | Response<any, Record<string, any>>>;
 }

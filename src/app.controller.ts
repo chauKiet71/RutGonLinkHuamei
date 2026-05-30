@@ -155,6 +155,45 @@ export class AppController {
       },
     });
 
+    const userAgent = req.headers['user-agent'] || '';
+    const isBot = /facebookexternalhit|twitterbot|linkedinbot|embedly|quora link preview|rogueim|tumblr|vkShare|w3c_validator|slackbot|redditbot|applebot|whatsapp|flipboard|bitlybot|gsa-crawler|zalo|telegrambot|discordbot|googlebot|bingbot|yandex|baiduspider/i.test(userAgent);
+
+    if (isBot) {
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const host = req.headers.host;
+      const absoluteThumbnailUrl = `${protocol}://${host}/thumbnail.png`;
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(`<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tiếng Trung Huamei - Rút Gọn Link</title>
+    <meta name="description" content="Huamei Link - Công cụ rút gọn liên kết nhanh chóng, dễ dàng và hoàn toàn miễn phí của Tiếng Trung Huamei.">
+    
+    <!-- Open Graph / Facebook / Zalo -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Tiếng Trung Huamei - Rút Gọn Link">
+    <meta property="og:description" content="Huamei Link - Rút gọn liên kết nhanh chóng và dễ dàng. Chia sẻ tài liệu học tiếng Trung miễn phí.">
+    <meta property="og:image" content="${absoluteThumbnailUrl}">
+    <meta property="og:url" content="${protocol}://${host}/${link.slug}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="Tiếng Trung Huamei - Rút Gọn Link">
+    <meta property="twitter:description" content="Huamei Link - Rút gọn liên kết nhanh chóng và dễ dàng. Chia sẻ tài liệu học tiếng Trung miễn phí.">
+    <meta property="twitter:image" content="${absoluteThumbnailUrl}">
+
+    <!-- Fallback redirect -->
+    <meta http-equiv="refresh" content="0;url=${link.destination}">
+    <script>window.location.href = "${link.destination}";</script>
+</head>
+<body>
+    Đang chuyển hướng đến <a href="${link.destination}">${link.destination}</a>...
+</body>
+</html>`);
+    }
+
     return res.redirect(302, link.destination);
   }
 }
