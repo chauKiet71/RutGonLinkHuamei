@@ -44,13 +44,14 @@ let AppController = class AppController {
             throw new common_1.BadRequestException('Đường dẫn gốc không hợp lệ');
         }
         let slug = body.slug ? body.slug.trim() : '';
+        slug = slug.replace(/^\/+|\/+$/g, '');
         if (slug) {
-            const slugRegex = /^[a-zA-Z0-9_-]+$/;
+            const slugRegex = /^[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*$/;
             if (!slugRegex.test(slug)) {
-                throw new common_1.BadRequestException('Slug chỉ được chứa chữ cái, chữ số, dấu gạch ngang (-) và gạch dưới (_)');
+                throw new common_1.BadRequestException('Slug chỉ được chứa chữ cái, chữ số, dấu gạch ngang (-), gạch dưới (_) và dấu gạch chéo (/) phân cách');
             }
-            if (slug.length > 30) {
-                throw new common_1.BadRequestException('Slug không được vượt quá 30 ký tự');
+            if (slug.length > 100) {
+                throw new common_1.BadRequestException('Slug không được vượt quá 100 ký tự');
             }
             const reservedSlugs = ['api', 'admin', 'login', 'dashboard'];
             if (reservedSlugs.includes(slug.toLowerCase())) {
@@ -96,7 +97,18 @@ let AppController = class AppController {
             createdAt: link.createdAt,
         };
     }
-    async redirectLink(slug, req, res) {
+    async getLinks() {
+        return this.prisma.link.findMany({
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+    }
+    async redirectLink(req, res, next) {
+        const slug = decodeURIComponent(req.path.substring(1)).replace(/^\/+|\/+$/g, '');
+        if (!slug || slug.startsWith('api/') || slug.includes('.') || slug === 'favicon.ico') {
+            return next();
+        }
         console.log('Host:', req.hostname);
         console.log('Slug:', slug);
         const link = await this.prisma.link.findUnique({
@@ -105,6 +117,14 @@ let AppController = class AppController {
         if (!link) {
             throw new common_1.NotFoundException('Link không tồn tại');
         }
+        await this.prisma.link.update({
+            where: { slug },
+            data: {
+                clicks: {
+                    increment: 1,
+                },
+            },
+        });
         return res.redirect(302, link.destination);
     }
 };
@@ -118,12 +138,18 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AppController.prototype, "createLink", null);
 __decorate([
-    (0, common_1.Get)(':slug'),
-    __param(0, (0, common_1.Param)('slug')),
-    __param(1, (0, common_1.Req)()),
-    __param(2, (0, common_1.Res)()),
+    (0, common_1.Get)('api/links'),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "getLinks", null);
+__decorate([
+    (0, common_1.Get)('*'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)()),
+    __param(2, (0, common_1.Next)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Function]),
     __metadata("design:returntype", Promise)
 ], AppController.prototype, "redirectLink", null);
 exports.AppController = AppController = __decorate([

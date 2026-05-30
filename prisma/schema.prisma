@@ -11,4 +11,5 @@ model Link {
   slug        String   @unique
   destination String
   createdAt   DateTime @default(now())
+  clicks      Int      @default(0)
 }

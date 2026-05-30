@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Param, Res, NotFoundException, BadRequestException, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Res, NotFoundException, BadRequestException, Req, Next } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 
 function generateRandomSlug(length = 6): string {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -39,18 +39,20 @@ export class AppController {
     }
 
     let slug = body.slug ? body.slug.trim() : '';
+    // Xóa ký tự gạch chéo ở đầu và cuối nếu người dùng nhập thừa
+    slug = slug.replace(/^\/+|\/+$/g, '');
 
     if (slug) {
-      const slugRegex = /^[a-zA-Z0-9_-]+$/;
+      const slugRegex = /^[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*$/;
 
       if (!slugRegex.test(slug)) {
         throw new BadRequestException(
-          'Slug chỉ được chứa chữ cái, chữ số, dấu gạch ngang (-) và gạch dưới (_)',
+          'Slug chỉ được chứa chữ cái, chữ số, dấu gạch ngang (-), gạch dưới (_) và dấu gạch chéo (/) phân cách',
         );
       }
 
-      if (slug.length > 30) {
-        throw new BadRequestException('Slug không được vượt quá 30 ký tự');
+      if (slug.length > 100) {
+        throw new BadRequestException('Slug không được vượt quá 100 ký tự');
       }
 
       const reservedSlugs = ['api', 'admin', 'login', 'dashboard'];
@@ -112,12 +114,27 @@ export class AppController {
     };
   }
 
-  @Get(':slug')
+  @Get('api/links')
+  async getLinks() {
+    return this.prisma.link.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  @Get('*')
   async redirectLink(
-    @Param('slug') slug: string,
     @Req() req: Request,
     @Res() res: Response,
+    @Next() next: NextFunction,
   ) {
+    const slug = decodeURIComponent(req.path.substring(1)).replace(/^\/+|\/+$/g, '');
+
+    if (!slug || slug.startsWith('api/') || slug.includes('.') || slug === 'favicon.ico') {
+      return next();
+    }
+
     console.log('Host:', req.hostname);
     console.log('Slug:', slug);
 
@@ -128,6 +145,15 @@ export class AppController {
     if (!link) {
       throw new NotFoundException('Link không tồn tại');
     }
+
+    await this.prisma.link.update({
+      where: { slug },
+      data: {
+        clicks: {
+          increment: 1,
+        },
+      },
+    });
 
     return res.redirect(302, link.destination);
   }

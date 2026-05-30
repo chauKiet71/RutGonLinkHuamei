@@ -1,5 +1,5 @@
 import { PrismaService } from './prisma.service';
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 export declare class AppController {
     private readonly prisma;
     constructor(prisma: PrismaService);
@@ -13,5 +13,12 @@ export declare class AppController {
         shortUrl: string;
         createdAt: Date;
     }>;
-    redirectLink(slug: string, req: Request, res: Response): Promise<void>;
+    getLinks(): Promise<{
+        id: number;
+        slug: string;
+        destination: string;
+        createdAt: Date;
+        clicks: number;
+    }[]>;
+    redirectLink(req: Request, res: Response, next: NextFunction): Promise<void>;
 }
